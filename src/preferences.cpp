@@ -217,8 +217,9 @@ void Interface(wxTreebook *book, Preferences *parent) {
         p->OptionAdd(edit_box, _("Overwrite in time boxes"), "Subtitle/Time Edit/Insert Mode");
         p->OptionAdd(edit_box, _("Shift+Enter adds \\n"), "Subtitle/Edit Box/Soft Line Break");
         p->OptionAdd(edit_box, _("Enable syntax highlighting"), "Subtitle/Highlight/Syntax");
-        auto rtl_layout = p->OptionAdd(edit_box, _("Use right-to-left interface layout (recommended for RTL languages)"), "Subtitle/Edit Box/RTL Layout");
-        wxString rtl_tooltip = _("Mirrors the subtitle editor and related panels when the interface language is right-to-left. This will be offered automatically after choosing an RTL UI language.");
+	auto rtl_layout = p->OptionAdd(edit_box, _("Use right-to-left interface layout (recommended for RTL languages)"), "Subtitle/Edit Box/RTL Layout");
+	wxString rtl_tooltip = _("Mirrors the subtitle editor and related panels when the interface language is right-to-left. This will be offered automatically after choosing an RTL UI language.");
+	rtl_tooltip << "\n\n" << _("Shortcut: Ctrl+Shift+Right (Cmd+Shift+Right on macOS) toggles right-to-left layout; Ctrl+Shift+Left (Cmd+Shift+Left) restores left-to-right.");
         if (!SubsTextEditCtrl::SupportsBidirectionalRendering()) {
                 rtl_layout->Enable(false);
                 rtl_tooltip << "\n\n" << _(L"Full RTL rendering requires wxWidgets built with Scintilla bidirectional support "

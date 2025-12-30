@@ -260,8 +260,31 @@ void SubsTextEditCtrl::OnLoseFocus(wxFocusEvent &event) {
 }
 
 void SubsTextEditCtrl::OnKeyDown(wxKeyEvent &event) {
-	event.Skip();
+	bool handled = false;
 
+	const int keycode = event.GetKeyCode();
+	const bool toggle_shortcut = event.CmdDown() && event.ShiftDown() && !event.AltDown();
+	if (toggle_shortcut && (keycode == WXK_RIGHT || keycode == WXK_NUMPAD_RIGHT)) {
+		ConfigureBidirectionalSupport(true);
+		OPT_SET("Subtitle/Edit Box/RTL Layout")->SetBool(true);
+		SetStyles();
+		Refresh();
+		handled = true;
+	}
+	else if (toggle_shortcut && (keycode == WXK_LEFT || keycode == WXK_NUMPAD_LEFT)) {
+		ConfigureBidirectionalSupport(false);
+		OPT_SET("Subtitle/Edit Box/RTL Layout")->SetBool(false);
+		SetStyles();
+		Refresh();
+		handled = true;
+	}
+
+	if (handled) {
+		event.Skip(false);
+		return;
+	}
+
+	event.Skip();
 	// Workaround for wxSTC eating tabs.
 	if (event.GetKeyCode() == WXK_TAB)
 		Navigate(event.ShiftDown() ? wxNavigationKeyEvent::IsBackward : wxNavigationKeyEvent::IsForward);
