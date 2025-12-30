@@ -89,7 +89,7 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 , spellchecker(SpellCheckerFactory::GetSpellChecker())
 , thesaurus(std::make_unique<Thesaurus>())
 , context(context)
-, use_bidi_fallback(rtl_layout && !SupportsBidirectionalRendering())
+, use_bidi_fallback(rtl_layout)
 {
         // Set properties
         SetWrapMode(wxSTC_WRAP_WORD);
