@@ -88,8 +88,11 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	void OnLoseFocus(wxFocusEvent &event);
 	void OnKeyDown(wxKeyEvent &event);
 
-	void SetSyntaxStyle(int id, wxFont &font, std::string const& name, wxColor const& default_background);
-	void Subscribe(std::string const& name);
+        void SetSyntaxStyle(int id, wxFont &font, std::string const& name, wxColor const& default_background);
+        void Subscribe(std::string const& name);
+
+        /// Configure bidirectional layout/rendering for RTL scripts when supported
+        void ConfigureBidirectionalSupport();
 
 	void StyleSpellCheck();
 	void UpdateCallTip();
