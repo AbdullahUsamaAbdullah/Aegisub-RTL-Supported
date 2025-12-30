@@ -15,8 +15,6 @@ tests_src = [
     'support/main.cpp',
     'support/util.cpp',
 
-    '../src/rtl_text_fallback.cpp',
-
     'tests/access.cpp',
     'tests/audio.cpp',
     'tests/cajun.cpp',
@@ -36,7 +34,6 @@ tests_src = [
     'tests/mru.cpp',
     'tests/option.cpp',
     'tests/path.cpp',
-    'tests/rtl_text_fallback.cpp',
     'tests/signals.cpp',
     'tests/split.cpp',
     'tests/syntax_highlight.cpp',

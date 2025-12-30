@@ -53,9 +53,6 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
         /// Project context, for splitting lines
         agi::Context *context;
 
-        /// Whether we should run the custom bidi/shaping pipeline for RTL text.
-        const bool use_bidi_fallback;
-
         /// The word right-clicked on, used for spellchecker replacing
         std::string currentWord;
 
@@ -82,9 +79,6 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
         /// highlighting when possible
         std::string line_text;
 
-        /// Avoid recursive updates while applying the fallback shaper.
-        bool suppress_bidi_refresh = false;
-
 	/// Tokenized version of line_text
 	std::vector<agi::ass::DialogueToken> tokenized_line;
 
@@ -101,8 +95,6 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 
         /// Configure bidirectional layout/rendering for RTL scripts when supported
         void ConfigureBidirectionalSupport(bool rtl_layout);
-        std::string PrepareTextForDisplay(std::string const& text) const;
-        void OnContentChange(wxStyledTextEvent& event);
 
         void StyleSpellCheck();
         void UpdateCallTip();
