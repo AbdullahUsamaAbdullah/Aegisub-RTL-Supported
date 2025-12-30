@@ -90,7 +90,7 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 	}
 
 	{
-		translated_text = new SubsTextEditCtrl(this, wxSize(320, 80), 0, nullptr);
+translated_text = new SubsTextEditCtrl(this, wxSize(320, 80), 0, nullptr, GetLayoutDirection() == wxLayout_RightToLeft);
 		translated_text->SetWrapMode(wxSTC_WRAP_WORD);
 		translated_text->SetMarginWidth(1, 0);
 		translated_text->SetFocus();
