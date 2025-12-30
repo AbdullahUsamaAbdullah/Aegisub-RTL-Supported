@@ -17,6 +17,9 @@ option('system_luajit', type: 'boolean', value: false, description: 'Force using
 option('local_boost', type: 'boolean', value: false, description: 'Force using locally compiled Boost')
 option('fallback_nasm', type: 'boolean', value: false, description: 'Force using fallback nasm')
 
+option('wx_direct2d', type: 'boolean', value: false,
+       description: 'Enable Direct2D/DirectWrite + bidi Scintilla flags for bundled wxWidgets')
+
 option('wx_version', type: 'string', value: '3.2.2', description: 'The minimum wxWidgets version to use')
 
 option('credit', type: 'string', value: '', description: 'Build credit shown in program title')
