@@ -87,11 +87,12 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 , thesaurus(std::make_unique<Thesaurus>())
 , context(context)
 {
-	// Set properties
-	SetWrapMode(wxSTC_WRAP_WORD);
-	SetMarginWidth(1,0);
-	UsePopUp(wxSTC_POPUP_NEVER);
-	SetStyles();
+        // Set properties
+        SetWrapMode(wxSTC_WRAP_WORD);
+        SetMarginWidth(1,0);
+        UsePopUp(wxSTC_POPUP_NEVER);
+        ConfigureBidirectionalSupport();
+        SetStyles();
 
 	// Set hotkeys
 	CmdKeyClear(wxSTC_KEY_RETURN,wxSTC_KEYMOD_CTRL);
@@ -169,6 +170,30 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 }
 
 SubsTextEditCtrl::~SubsTextEditCtrl() {
+}
+
+void SubsTextEditCtrl::ConfigureBidirectionalSupport() {
+#if defined(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN) || defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
+#ifdef __WXMSW__
+        SetTechnology(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN);
+#elif defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
+        SetTechnology(wxSTC_TECHNOLOGY_DIRECTWRITE);
+#endif
+#elif defined(wxSTC_TECHNOLOGY_DEFAULT)
+        // Fall back to the toolkit's default shaping path (e.g. Harfbuzz on GTK)
+        SetTechnology(wxSTC_TECHNOLOGY_DEFAULT);
+#endif
+
+#ifdef wxSTC_BIDIRECTIONAL_R2L
+        SetBidirectional(wxSTC_BIDIRECTIONAL_R2L);
+        SetLayoutDirection(wxLayout_RightToLeft);
+#elif defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L)
+        SendMsg(SCI_SETBIDIRECTIONAL, SC_BIDIRECTIONAL_R2L);
+        SetLayoutDirection(wxLayout_RightToLeft);
+#else
+        // No Scintilla bidi support; fall back to native RTL layout so caret and selections stay aligned
+        SetLayoutDirection(wxLayout_RightToLeft);
+#endif
 }
 
 void SubsTextEditCtrl::Subscribe(std::string const& name) {
