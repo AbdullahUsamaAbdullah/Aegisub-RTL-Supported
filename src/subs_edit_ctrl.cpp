@@ -175,7 +175,7 @@ SubsTextEditCtrl::~SubsTextEditCtrl() {
 }
 
 bool SubsTextEditCtrl::SupportsBidirectionalRendering() {
-#if defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
+#if defined(WX_STC_HAS_BIDI) || defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
         return true;
 #else
         return false;
@@ -198,7 +198,7 @@ void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
         SetTechnology(wxSTC_TECHNOLOGY_DEFAULT);
 #endif
 
-#if defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
+#if defined(WX_STC_HAS_BIDI) || defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
         const bool bidi_supported = true;
 #else
         const bool bidi_supported = false;

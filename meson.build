@@ -149,7 +149,38 @@ wx_dep = dependency('wxWidgets', version: '>=' + get_option('wx_version'),
                     required: false,
                     modules: ['std', 'stc', 'gl'])
 
+use_bundled_wx = false
+wx_has_bidi = false
+
 if wx_dep.found()
+    wx_bidi_probe = '''
+        #include <wx/stc/stc.h>
+        #ifndef wxSTC_BIDIRECTIONAL_R2L
+        #   include <Scintilla.h>
+        #   ifndef SCI_SETBIDIRECTIONAL
+        #       error "wxWidgets/Scintilla missing bidirectional flags"
+        #   endif
+        #endif
+        int main() { return 0; }
+    '''
+    wx_has_bidi = cc.compiles(wx_bidi_probe, dependencies: wx_dep, name: 'wxWidgets Scintilla bidirectional headers')
+    if not wx_has_bidi
+        if get_option('wx_bundled_bidi')
+            message('System wxWidgets/Scintilla headers are missing wxSTC_BIDIRECTIONAL_*/SCI_SETBIDIRECTIONAL; using bundled wxWidgets with bidi-enabled Scintilla instead')
+            use_bundled_wx = true
+        else
+            error('wxWidgets/Scintilla headers do not expose wxSTC_BIDIRECTIONAL_* or SCI_SETBIDIRECTIONAL. Install a bidi-capable wxWidgets or re-run with -Dwx_bundled_bidi=true to use the bundled copy.')
+        endif
+    endif
+else
+    if get_option('wx_bundled_bidi')
+        use_bundled_wx = true
+    else
+        error('wxWidgets not found and wx_bundled_bidi is false. Install a bidi-capable wxWidgets/Scintilla or enable the bundled fallback.')
+    endif
+endif
+
+if not use_bundled_wx
     deps += wx_dep
 else
     build_shared = true
@@ -176,13 +207,19 @@ else
         'wxBUILD_MONOLITHIC': true      # otherwise breaks project generation w/ meson
     })
 
-    if get_option('wx_direct2d')
+    bidi_directwrite = get_option('wx_bundled_bidi') or get_option('wx_direct2d')
+    if get_option('wx_bundled_bidi')
+        opt_var.add_cmake_defines({
+            'wxUSE_STC': 'ON',
+            'wxUSE_STC_BIDI': 'ON',
+        })
+    endif
+
+    if bidi_directwrite and host_machine.system() == 'windows'
         opt_var.add_cmake_defines({
             'wxUSE_GRAPHICS_DIRECT2D': 'ON',
             'wxUSE_DIRECTWRITE': 'ON',
-            'wxUSE_STC': 'ON',
             'wxUSE_STC_DIRECTWRITE': 'ON',
-            'wxUSE_STC_BIDI': 'ON',
         })
     endif
 
@@ -217,6 +254,12 @@ else
             error('Missing Windows SDK Common Controls Library (commctrl.h / comctl32.lib)')
         endif
     endif
+
+    wx_has_bidi = true
+endif
+
+if wx_has_bidi
+    conf.set('WX_STC_HAS_BIDI', 1)
 endif
 
 deps += dependency('icu-uc', version: '>=4.8.1.1')

@@ -19,6 +19,8 @@ option('fallback_nasm', type: 'boolean', value: false, description: 'Force using
 
 option('wx_direct2d', type: 'boolean', value: false,
        description: 'Enable Direct2D/DirectWrite + bidi Scintilla flags for bundled wxWidgets')
+option('wx_bundled_bidi', type: 'boolean', value: true,
+       description: 'Fall back to bundled wxWidgets/Scintilla with bidirectional support when the system wxWidgets lacks it')
 
 option('wx_version', type: 'string', value: '3.2.2', description: 'The minimum wxWidgets version to use')
 
