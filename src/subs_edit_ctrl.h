@@ -53,8 +53,7 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
         /// Project context, for splitting lines
         agi::Context *context;
 
-        /// Whether we need to manually shape RTL text because Scintilla lacks bidi
-        /// rendering.
+        /// Whether we should run the custom bidi/shaping pipeline for RTL text.
         const bool use_bidi_fallback;
 
         /// The word right-clicked on, used for spellchecker replacing

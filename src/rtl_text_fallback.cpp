@@ -36,6 +36,20 @@ class RtlFallbackLibrary {
         bool rtl_layout;
         icu::ErrorCode status;
 
+        static bool NeedsRtlAnchor(char16_t ch) {
+                switch (ch) {
+                case u'!':
+                case u'.':
+                case u':':
+                case u',':
+                case u';':
+                case u'?':
+                        return true;
+                default:
+                        return false;
+                }
+        }
+
         static std::u16string NormalizeArabicPunctuation(std::u16string_view text, bool rtl_layout) {
                 if (!rtl_layout)
                         return std::u16string{text.begin(), text.end()};
@@ -51,10 +65,24 @@ class RtlFallbackLibrary {
                         case u';':
                                 normalized.push_back(u'\u061B'); // Arabic semicolon
                                 break;
+                        case u'.':
+                                normalized.push_back(u'\u06D4'); // Arabic full stop
+                                break;
+                        case u'!':
+                                normalized.push_back(u'\u200F'); // Anchor punctuation inside RTL runs
+                                normalized.push_back(u'!');
+                                break;
                         case u'?':
                                 normalized.push_back(u'\u061F'); // Arabic question mark
                                 break;
+                        case u':':
+                                normalized.push_back(u'\u200F');
+                                normalized.push_back(u':');
+                                break;
                         default:
+                                if (NeedsRtlAnchor(ch)) {
+                                        normalized.push_back(u'\u200F');
+                                }
                                 normalized.push_back(ch);
                                 break;
                         }
@@ -108,9 +136,11 @@ class RtlFallbackLibrary {
                         return {};
 
                 std::u16string visual(text.size() + 32, 0);
-                auto reorder_flags = UBIDI_DO_MIRRORING |
-                        UBIDI_REMOVE_BIDI_CONTROLS |
-                        UBIDI_OUTPUT_REVERSE;
+                int32_t reorder_flags = UBIDI_DO_MIRRORING |
+                        UBIDI_REMOVE_BIDI_CONTROLS;
+#ifdef UBIDI_INSERT_LRM_FOR_NUMBERS
+                reorder_flags |= UBIDI_INSERT_LRM_FOR_NUMBERS;
+#endif
 
                 int32_t written = ubidi_writeReordered(
                         bidi.getAlias(),
