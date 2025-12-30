@@ -176,6 +176,16 @@ else
         'wxBUILD_MONOLITHIC': true      # otherwise breaks project generation w/ meson
     })
 
+    if get_option('wx_direct2d')
+        opt_var.add_cmake_defines({
+            'wxUSE_GRAPHICS_DIRECT2D': 'ON',
+            'wxUSE_DIRECTWRITE': 'ON',
+            'wxUSE_STC': 'ON',
+            'wxUSE_STC_DIRECTWRITE': 'ON',
+            'wxUSE_STC_BIDI': 'ON',
+        })
+    endif
+
     wx = cmake.subproject('wxWidgets', options: opt_var)
 
     deps += [

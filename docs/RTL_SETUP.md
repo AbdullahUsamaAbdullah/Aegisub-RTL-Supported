@@ -15,6 +15,8 @@ This guide explains why the **Use right-to-left interface layout** option can be
 ## Building with bidirectional Scintilla support
 You need a wxWidgets build that exposes Scintilla’s bidirectional APIs. The rest of Aegisub’s dependencies follow the platform-specific instructions already in `README.md`; the additional work is ensuring wxWidgets (and its bundled or external Scintilla) is bidi-enabled.
 
+If you are relying on the bundled wxWidgets subproject fallback instead of a system wxWidgets installation, you can ask Meson to turn on Direct2D/DirectWrite and the wxStyledTextCtrl bidi flags by passing `-Dwx_direct2d=true` when configuring. This option only affects bundled wx builds and still requires a Scintilla version that actually implements bidi support.
+
 ### Windows (DirectWrite)
 1. Install the Windows build prerequisites from `README.md` (Visual Studio, Python 3, Meson, CMake, and optional tools if you need installers).
 2. Build wxWidgets 3.2+ with a Scintilla that exposes `wxSTC_BIDIRECTIONAL_*`/`SCI_SETBIDIRECTIONAL`. The easiest path is using the bundled Scintilla with DirectWrite enabled (e.g., `nmake /f makefile.vc BUILD=release RUNTIME_LIBS=static USE_OPENGL=0`).
