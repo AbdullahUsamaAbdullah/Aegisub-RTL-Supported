@@ -81,7 +81,7 @@ class RtlFallbackLibrary {
                         reinterpret_cast<UChar*>(text.data()),
                         static_cast<int32_t>(text.size()),
                         shaping_options,
-                        &status.get());
+                        status);
 
                 if (status.isFailure() || written <= 0)
                         return {};
