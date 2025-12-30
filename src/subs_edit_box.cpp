@@ -201,7 +201,8 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context, wxLayoutDirect
 	main_sizer->Add(middle_right_sizer,0,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
 
 	// Text editor
-        edit_ctrl = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), wxBORDER_SUNKEN, c, layout_dir == wxLayout_RightToLeft);
+	edit_ctrl = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), wxBORDER_SUNKEN, c, layout_dir == wxLayout_RightToLeft);
+	edit_ctrl->SetToolTip(_("Shortcut: Ctrl+Shift+Right (Cmd+Shift+Right on macOS) toggles right-to-left layout; Ctrl+Shift+Left (Cmd+Shift+Left) restores left-to-right."));
 	edit_ctrl->Bind(wxEVT_CHAR_HOOK, &SubsEditBox::OnKeyDown, this);
 
 	secondary_editor = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(300,50)), wxBORDER_SUNKEN | wxTE_MULTILINE | wxTE_READONLY);
