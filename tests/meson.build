@@ -15,6 +15,8 @@ tests_src = [
     'support/main.cpp',
     'support/util.cpp',
 
+    '../src/rtl_text_fallback.cpp',
+
     'tests/access.cpp',
     'tests/audio.cpp',
     'tests/cajun.cpp',
@@ -34,6 +36,7 @@ tests_src = [
     'tests/mru.cpp',
     'tests/option.cpp',
     'tests/path.cpp',
+    'tests/rtl_text_fallback.cpp',
     'tests/signals.cpp',
     'tests/split.cpp',
     'tests/syntax_highlight.cpp',
@@ -47,6 +50,7 @@ tests_src = [
 ]
 
 tests_inc = include_directories('support')
+src_inc = include_directories('..', '../src')
 
 tests_args = []
 
@@ -60,7 +64,7 @@ endif
 runner = executable(
     'gtest-main',
     tests_src,
-    include_directories: [tests_inc, libaegisub_inc],
+    include_directories: [tests_inc, libaegisub_inc, src_inc],
     dependencies: [tests_deps, deps],
     cpp_args: tests_args,
     link_with: libaegisub,

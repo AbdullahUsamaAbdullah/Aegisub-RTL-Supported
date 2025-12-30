@@ -3,17 +3,22 @@
 
 #include "rtl_text_fallback.h"
 
-#include <unicode/ubidi.h>
-#include <unicode/ubiditransform.h>
+#include <unicode/errorcode.h>
 #include <unicode/localpointer.h>
 #include <unicode/unistr.h>
 #include <unicode/ushape.h>
 #include <unicode/utypes.h>
+#include <unicode/ubidi.h>
 
 #include <string>
 #include <string_view>
 
 namespace {
+// Compatibility shim for older ICU builds that may not expose UBIDI_REMOVE_BIDI_CONTROLS
+#ifndef UBIDI_REMOVE_BIDI_CONTROLS
+constexpr uint32_t UBIDI_REMOVE_BIDI_CONTROLS = 0;
+#endif
+
 // Convert a UTF-8 string to a UTF-16 buffer suitable for ICU transform APIs.
 std::u16string ToUtf16(std::string const& text) {
         icu::UnicodeString unicode = icu::UnicodeString::fromUTF8(text);
@@ -26,49 +31,137 @@ std::string FromUtf16(std::u16string const& text16) {
         unicode.toUTF8String(utf8);
         return utf8;
 }
+
+class RtlFallbackLibrary {
+        bool rtl_layout;
+        icu::ErrorCode status;
+
+        static std::u16string NormalizeArabicPunctuation(std::u16string_view text, bool rtl_layout) {
+                if (!rtl_layout)
+                        return std::u16string{text.begin(), text.end()};
+
+                std::u16string normalized;
+                normalized.reserve(text.size());
+
+                for (char16_t ch : text) {
+                        switch (ch) {
+                        case u',':
+                                normalized.push_back(u'\u060C'); // Arabic comma
+                                break;
+                        case u';':
+                                normalized.push_back(u'\u061B'); // Arabic semicolon
+                                break;
+                        case u'?':
+                                normalized.push_back(u'\u061F'); // Arabic question mark
+                                break;
+                        default:
+                                normalized.push_back(ch);
+                                break;
+                        }
+                }
+
+                return normalized;
+        }
+
+        std::u16string ShapeArabic(std::u16string text) {
+                if (!rtl_layout)
+                        return text;
+
+                const uint32_t shaping_options = U_SHAPE_LETTERS_SHAPE |
+                        U_SHAPE_TEXT_DIRECTION_LOGICAL |
+                        U_SHAPE_LENGTH_GROW_SHRINK |
+                        U_SHAPE_PRESERVE_PRESENTATION;
+
+                // Provide headroom for expansion during shaping.
+                const auto source_length = static_cast<int32_t>(text.size());
+                text.resize(text.size() + 32);
+                int32_t written = u_shapeArabic(
+                        reinterpret_cast<const UChar*>(text.data()),
+                        source_length,
+                        reinterpret_cast<UChar*>(text.data()),
+                        static_cast<int32_t>(text.size()),
+                        shaping_options,
+                        &status.get());
+
+                if (status.isFailure() || written <= 0)
+                        return {};
+
+                text.resize(written);
+                return text;
+        }
+
+        std::string ReorderToVisual(std::u16string const& text) {
+                icu::LocalUBiDiPointer bidi(ubidi_openSized(static_cast<int32_t>(text.size()), 0, status));
+                if (status.isFailure() || bidi.isNull())
+                        return {};
+
+                const UBiDiLevel base_level = rtl_layout ? UBIDI_RTL : UBIDI_LTR;
+                ubidi_setPara(
+                        bidi.getAlias(),
+                        reinterpret_cast<const UChar*>(text.data()),
+                        static_cast<int32_t>(text.size()),
+                        base_level,
+                        nullptr,
+                        status);
+
+                if (status.isFailure())
+                        return {};
+
+                std::u16string visual(text.size() + 32, 0);
+                auto reorder_flags = UBIDI_DO_MIRRORING |
+                        UBIDI_REMOVE_BIDI_CONTROLS |
+                        UBIDI_OUTPUT_REVERSE;
+
+                int32_t written = ubidi_writeReordered(
+                        bidi.getAlias(),
+                        reinterpret_cast<UChar*>(visual.data()),
+                        static_cast<int32_t>(visual.size()),
+                        reorder_flags,
+                        status);
+
+                if (status == U_BUFFER_OVERFLOW_ERROR) {
+                        status.reset();
+                        visual.resize(written);
+                        written = ubidi_writeReordered(
+                                bidi.getAlias(),
+                                reinterpret_cast<UChar*>(visual.data()),
+                                static_cast<int32_t>(visual.size()),
+                                reorder_flags,
+                                status);
+                }
+
+                if (status.isFailure() || written <= 0)
+                        return {};
+
+                visual.resize(written);
+                return FromUtf16(visual);
+        }
+
+public:
+        explicit RtlFallbackLibrary(bool rtl_layout) : rtl_layout(rtl_layout) { }
+
+        std::string Process(std::string const& logical_text) {
+                std::u16string utf16 = ToUtf16(logical_text);
+                if (utf16.empty())
+                        return logical_text;
+
+                std::u16string normalized = NormalizeArabicPunctuation(utf16, rtl_layout);
+                std::u16string shaped = ShapeArabic(std::move(normalized));
+                if (status.isFailure() || shaped.empty())
+                        return logical_text;
+
+                std::string visual = ReorderToVisual(shaped);
+                if (status.isFailure() || visual.empty())
+                        return logical_text;
+
+                return visual;
+        }
+};
 } // namespace
 
 std::string ApplyBidirectionalFallback(std::string const& text, bool rtl_layout) {
         if (text.empty()) return text;
 
-        icu::ErrorCode status;
-        icu::LocalUBiDiTransformPointer transform(ubiditransform_open(status));
-        if (status.isFailure() || transform.isNull())
-                return text;
-
-        auto utf16 = ToUtf16(text);
-        // Add slack space so we can grow when Arabic shaping expands characters.
-        std::u16string buffer(utf16.size() + 32, 0);
-
-        const UBiDiLevel para_level = rtl_layout ? UBIDI_DEFAULT_RTL : UBIDI_DEFAULT_LTR;
-        const uint32_t shaping_options = U_SHAPE_LETTERS_SHAPE |
-                U_SHAPE_TEXT_DIRECTION_LOGICAL |
-                U_SHAPE_LENGTH_GROW_SHRINK |
-                U_SHAPE_PRESERVE_PRESENTATION;
-
-        int32_t written = ubiditransform_transform(
-                transform.getAlias(),
-                reinterpret_cast<const UChar*>(utf16.data()), static_cast<int32_t>(utf16.size()),
-                reinterpret_cast<UChar*>(buffer.data()), static_cast<int32_t>(buffer.size()),
-                para_level, UBIDI_LOGICAL,
-                para_level, UBIDI_VISUAL,
-                UBIDI_MIRRORING_ON, shaping_options, status);
-
-        if (status == U_BUFFER_OVERFLOW_ERROR) {
-                status.reset();
-                buffer.resize(written);
-                written = ubiditransform_transform(
-                        transform.getAlias(),
-                        reinterpret_cast<const UChar*>(utf16.data()), static_cast<int32_t>(utf16.size()),
-                        reinterpret_cast<UChar*>(buffer.data()), static_cast<int32_t>(buffer.size()),
-                        para_level, UBIDI_LOGICAL,
-                        para_level, UBIDI_VISUAL,
-                        UBIDI_MIRRORING_ON, shaping_options, status);
-        }
-
-        if (status.isFailure() || written <= 0)
-                return text;
-
-        buffer.resize(written);
-        return FromUtf16(buffer);
+        RtlFallbackLibrary shaper(rtl_layout);
+        return shaper.Process(text);
 }
