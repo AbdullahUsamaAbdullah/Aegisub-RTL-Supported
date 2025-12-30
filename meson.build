@@ -103,6 +103,23 @@ deps += cc.find_library('dl', required: false)
 
 deps += dependency('iconv', fallback: ['iconv', 'libiconv_dep'])
 
+harfbuzz_dep = dependency('harfbuzz', fallback: ['harfbuzz', 'libharfbuzz_dep'])
+deps += harfbuzz_dep
+
+fribidi_opt = get_option('fribidi')
+fribidi_dep = dependency('fribidi', required: false,
+                         fallback: ['fribidi', 'libfribidi_dep'])
+if fribidi_dep.found()
+    deps += fribidi_dep
+    conf.set('WITH_FRIBIDI', 1)
+else
+    if fribidi_opt.disabled()
+        message('FriBidi explicitly disabled; RTL shaping will not be available')
+    else
+        error('FriBidi is required for RTL text shaping. Install libfribidi or keep subprojects/fribidi.wrap available.')
+    endif
+endif
+
 deps += dependency('libass', version: '>=0.9.7',
                    fallback: ['libass', 'libass_dep'])
 
@@ -207,11 +224,27 @@ else
         'wxBUILD_MONOLITHIC': true      # otherwise breaks project generation w/ meson
     })
 
+    bidi_find_roots = []
+    foreach bidi_dep : [harfbuzz_dep, fribidi_dep]
+        if bidi_dep.found()
+            prefix = bidi_dep.get_variable(pkgconfig: 'prefix', default_value: '')
+            if prefix != ''
+                bidi_find_roots += prefix
+            endif
+        endif
+    endforeach
+
+    if bidi_find_roots.length() > 0
+        opt_var.add_cmake_defines({'CMAKE_PREFIX_PATH': ';'.join(bidi_find_roots)})
+    endif
+
     bidi_directwrite = get_option('wx_bundled_bidi') or get_option('wx_direct2d')
     if get_option('wx_bundled_bidi')
         opt_var.add_cmake_defines({
             'wxUSE_STC': 'ON',
             'wxUSE_STC_BIDI': 'ON',
+            'wxUSE_FRIBIDI': 'ON',
+            'wxUSE_HARFBUZZ': 'ON',
         })
     endif
 
