@@ -81,7 +81,7 @@ enum {
 	EDIT_MENU_THES_LANGS
 };
 
-SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, agi::Context *context)
+SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, agi::Context *context, bool rtl_layout)
 : wxStyledTextCtrl(parent, -1, wxDefaultPosition, wsize, style)
 , spellchecker(SpellCheckerFactory::GetSpellChecker())
 , thesaurus(std::make_unique<Thesaurus>())
@@ -91,7 +91,7 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
         SetWrapMode(wxSTC_WRAP_WORD);
         SetMarginWidth(1,0);
         UsePopUp(wxSTC_POPUP_NEVER);
-        ConfigureBidirectionalSupport();
+        ConfigureBidirectionalSupport(rtl_layout);
         SetStyles();
 
 	// Set hotkeys
@@ -172,7 +172,7 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 SubsTextEditCtrl::~SubsTextEditCtrl() {
 }
 
-void SubsTextEditCtrl::ConfigureBidirectionalSupport() {
+void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
 #if defined(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN) || defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
 #ifdef __WXMSW__
         SetTechnology(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN);
@@ -185,14 +185,21 @@ void SubsTextEditCtrl::ConfigureBidirectionalSupport() {
 #endif
 
 #ifdef wxSTC_BIDIRECTIONAL_R2L
-        SetBidirectional(wxSTC_BIDIRECTIONAL_R2L);
-        SetLayoutDirection(wxLayout_RightToLeft);
+        if (rtl_layout) {
+                SetBidirectional(wxSTC_BIDIRECTIONAL_R2L);
+        }
+#ifdef wxSTC_BIDIRECTIONAL_L2R
+        else {
+                SetBidirectional(wxSTC_BIDIRECTIONAL_L2R);
+        }
+#endif
+        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 #elif defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L)
-        SendMsg(SCI_SETBIDIRECTIONAL, SC_BIDIRECTIONAL_R2L);
-        SetLayoutDirection(wxLayout_RightToLeft);
+        SendMsg(SCI_SETBIDIRECTIONAL, rtl_layout ? SC_BIDIRECTIONAL_R2L : SC_BIDIRECTIONAL_L2R);
+        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 #else
-        // No Scintilla bidi support; fall back to native RTL layout so caret and selections stay aligned
-        SetLayoutDirection(wxLayout_RightToLeft);
+        // No Scintilla bidi support; fall back to native layout so caret and selections stay aligned
+        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 #endif
 }
 

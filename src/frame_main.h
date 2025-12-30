@@ -34,7 +34,9 @@
 class AegisubApp;
 class AsyncVideoProvider;
 class AudioBox;
+class SubsEditBox;
 class VideoBox;
+class wxPanel;
 namespace agi { class AudioProvider; }
 namespace agi { struct Context; class OptionValue; }
 
@@ -53,7 +55,8 @@ class FrameMain : public wxFrame {
 	bool showAudio = true; ///< Is the audio display shown?
 	wxTimer StatusClear;   ///< Status bar timeout timer
 
-	void InitContents();
+        void InitContents();
+        void ApplyLayoutDirection(wxLayoutDirection direction);
 
 	void UpdateTitle();
 
@@ -63,15 +66,18 @@ class FrameMain : public wxFrame {
 	void OnStatusClear(wxTimerEvent &event);
 	void OnCloseWindow (wxCloseEvent &event);
 
-	void OnAudioOpen(agi::AudioProvider *provider);
-	void OnVideoOpen(AsyncVideoProvider *provider);
-	void OnVideoDetach(agi::OptionValue const& opt);
-	void OnSubtitlesOpen();
+        void OnAudioOpen(agi::AudioProvider *provider);
+        void OnVideoOpen(AsyncVideoProvider *provider);
+        void OnVideoDetach(agi::OptionValue const& opt);
+        void OnSubtitlesOpen();
+        void OnLayoutDirectionChanged(agi::OptionValue const& opt);
 
 	void EnableToolBar(agi::OptionValue const& opt);
 
-	AudioBox *audioBox;      ///< The audio area
-	VideoBox *videoBox;      ///< The video area
+        AudioBox *audioBox;      ///< The audio area
+        VideoBox *videoBox;      ///< The video area
+        SubsEditBox *editBox = nullptr; ///< The subtitle editing area
+        wxPanel *panel = nullptr; ///< Background container for top-level controls
 
 	wxSizer *MainSizer;  ///< Arranges things from top to bottom in the window
 	wxSizer *TopSizer;   ///< Arranges video box and tool box from left to right

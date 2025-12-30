@@ -47,6 +47,7 @@ class SubsTextEditCtrl;
 class TimeEdit;
 class wxButton;
 class wxCheckBox;
+class wxSizerItem;
 class wxRadioButton;
 class wxSizer;
 class wxSpinCtrl;
@@ -93,10 +94,12 @@ class SubsEditBox final : public wxPanel {
 	wxSpinCtrl *layer;
 	std::array<wxTextCtrl *, 3> margin;
 	Placeholder<wxComboBox> *effect_box;
-	wxRadioButton *by_time;
-	wxRadioButton *by_frame;
-	wxTextCtrl *char_count;
-	wxCheckBox *split_box;
+        wxRadioButton *by_time;
+        wxRadioButton *by_frame;
+        wxTextCtrl *char_count;
+        wxCheckBox *split_box;
+        wxSizerItem *split_box_item = nullptr;
+        wxLayoutDirection layout_dir;
 
 	wxSizer *top_sizer;
 	wxSizer *middle_right_sizer;
@@ -200,8 +203,10 @@ class SubsEditBox final : public wxPanel {
 	wxTextCtrl *secondary_editor;
 
 public:
-	/// @brief Constructor
-	/// @param parent Parent window
-	SubsEditBox(wxWindow *parent, agi::Context *context);
-	~SubsEditBox();
+        /// @brief Constructor
+        /// @param parent Parent window
+        SubsEditBox(wxWindow *parent, agi::Context *context, wxLayoutDirection layout_direction);
+        ~SubsEditBox();
+
+        void ApplyLayoutDirection(wxLayoutDirection direction);
 };

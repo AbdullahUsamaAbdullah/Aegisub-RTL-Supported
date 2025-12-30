@@ -101,12 +101,15 @@ const auto AssDialogue_Actor = &AssDialogue::Actor;
 const auto AssDialogue_Effect = &AssDialogue::Effect;
 }
 
-SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
+SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context, wxLayoutDirection layout_direction)
 : wxPanel(parent, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxRAISED_BORDER, "SubsEditBox")
 , c(context)
+, layout_dir(layout_direction)
 , undo_timer(GetEventHandler())
 {
-	using std::bind;
+        using std::bind;
+
+        SetLayoutDirection(layout_dir);
 
 	// Top controls
 	top_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -186,10 +189,10 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	by_frame = MakeRadio(_("F&rame"), false, _("Time by frame number"));
 	by_frame->Enable(false);
 
-	split_box = new wxCheckBox(this,-1,_("Show Original"));
-	split_box->SetToolTip(_("Show the contents of the subtitle line when it was first selected above the edit box. This is sometimes useful when editing subtitles or translating subtitles into another language."));
-	split_box->Bind(wxEVT_CHECKBOX, &SubsEditBox::OnSplit, this);
-	middle_right_sizer->Add(split_box, wxSizerFlags().Center().Left());
+        split_box = new wxCheckBox(this,-1,_("Show Original"));
+        split_box->SetToolTip(_("Show the contents of the subtitle line when it was first selected above the edit box. This is sometimes useful when editing subtitles or translating subtitles into another language."));
+        split_box->Bind(wxEVT_CHECKBOX, &SubsEditBox::OnSplit, this);
+        split_box_item = middle_right_sizer->Add(split_box, wxSizerFlags().Center().Align(layout_dir == wxLayout_RightToLeft ? wxALIGN_RIGHT : wxALIGN_LEFT));
 
 	// Main sizer
 	wxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
@@ -198,7 +201,7 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	main_sizer->Add(middle_right_sizer,0,wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,3);
 
 	// Text editor
-	edit_ctrl = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), wxBORDER_SUNKEN, c);
+        edit_ctrl = new SubsTextEditCtrl(this, FromDIP(wxSize(300,50)), wxBORDER_SUNKEN, c, layout_dir == wxLayout_RightToLeft);
 	edit_ctrl->Bind(wxEVT_CHAR_HOOK, &SubsEditBox::OnKeyDown, this);
 
 	secondary_editor = new wxTextCtrl(this, -1, "", wxDefaultPosition, FromDIP(wxSize(300,50)), wxBORDER_SUNKEN | wxTE_MULTILINE | wxTE_READONLY);
@@ -209,13 +212,15 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 
 	bottom_sizer = new wxBoxSizer(wxHORIZONTAL);
 	bottom_sizer->Add(MakeBottomButton("edit/revert"), wxSizerFlags().Border(wxRIGHT));
-	bottom_sizer->Add(MakeBottomButton("edit/clear"), wxSizerFlags().Border(wxRIGHT));
-	bottom_sizer->Add(MakeBottomButton("edit/clear/text"), wxSizerFlags().Border(wxRIGHT));
-	bottom_sizer->Add(MakeBottomButton("edit/insert_original"));
-	main_sizer->Add(bottom_sizer);
-	main_sizer->Hide(bottom_sizer);
+        bottom_sizer->Add(MakeBottomButton("edit/clear"), wxSizerFlags().Border(wxRIGHT));
+        bottom_sizer->Add(MakeBottomButton("edit/clear/text"), wxSizerFlags().Border(wxRIGHT));
+        bottom_sizer->Add(MakeBottomButton("edit/insert_original"));
+        main_sizer->Add(bottom_sizer);
+        main_sizer->Hide(bottom_sizer);
 
-	SetSizerAndFit(main_sizer);
+        ApplyLayoutDirection(layout_dir);
+
+        SetSizerAndFit(main_sizer);
 
 	edit_ctrl->Bind(wxEVT_STC_MODIFIED, &SubsEditBox::OnChange, this);
 	edit_ctrl->SetModEventMask(wxSTC_MOD_INSERTTEXT | wxSTC_MOD_DELETETEXT | wxSTC_STARTACTION);
@@ -250,7 +255,50 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 }
 
 SubsEditBox::~SubsEditBox() {
-	c->textSelectionController->SetControl(nullptr);
+        c->textSelectionController->SetControl(nullptr);
+}
+
+void SubsEditBox::ApplyLayoutDirection(wxLayoutDirection direction) {
+        layout_dir = direction;
+        SetLayoutDirection(direction);
+
+        auto apply = [direction](wxWindow *window) {
+                if (window)
+                        window->SetLayoutDirection(direction);
+        };
+
+        apply(comment_box);
+        apply(style_box);
+        apply(style_edit_button);
+        apply(actor_box);
+        apply(effect_box);
+        apply(char_count);
+        apply(layer);
+        apply(start_time);
+        apply(end_time);
+        apply(duration);
+        for (auto ctrl : margin)
+                apply(ctrl);
+        apply(by_time);
+        apply(by_frame);
+        apply(split_box);
+        apply(secondary_editor);
+        apply(edit_ctrl);
+
+        if (split_box_item) {
+                wxSizerFlags flags;
+                flags.Center();
+                flags.Align(direction == wxLayout_RightToLeft ? wxALIGN_RIGHT : wxALIGN_LEFT);
+                split_box_item->SetFlag(flags.GetFlags());
+        }
+
+        if (top_sizer)
+                top_sizer->Layout();
+        if (middle_left_sizer)
+                middle_left_sizer->Layout();
+        if (middle_right_sizer)
+                middle_right_sizer->Layout();
+        Layout();
 }
 
 wxTextCtrl *SubsEditBox::MakeMarginCtrl(wxString const& tooltip, int margin, wxString const& commit_msg) {

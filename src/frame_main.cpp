@@ -64,6 +64,7 @@
 
 #include <wx/dnd.h>
 #include <wx/msgdlg.h>
+#include <wx/panel.h>
 #include <wx/sizer.h>
 #include <wx/statline.h>
 #include <wx/sysopt.h>
@@ -110,16 +111,20 @@ FrameMain::FrameMain()
 	setlocale(LC_NUMERIC, "C");
 #endif
 
-	StartupLog("Initializing context controls");
-	context->ass->AddCommitListener(&FrameMain::UpdateTitle, this);
-	context->subsController->AddFileOpenListener(&FrameMain::OnSubtitlesOpen, this);
-	context->subsController->AddFileSaveListener(&FrameMain::UpdateTitle, this);
-	context->project->AddAudioProviderListener(&FrameMain::OnAudioOpen, this);
-	context->project->AddVideoProviderListener(&FrameMain::OnVideoOpen, this);
+        StartupLog("Initializing context controls");
+        context->ass->AddCommitListener(&FrameMain::UpdateTitle, this);
+        context->subsController->AddFileOpenListener(&FrameMain::OnSubtitlesOpen, this);
+        context->subsController->AddFileSaveListener(&FrameMain::UpdateTitle, this);
+        context->project->AddAudioProviderListener(&FrameMain::OnAudioOpen, this);
+        context->project->AddVideoProviderListener(&FrameMain::OnVideoOpen, this);
 
-	StartupLog("Initializing context frames");
-	context->parent = this;
-	context->frame = this;
+        StartupLog("Initializing context frames");
+        context->parent = this;
+        context->frame = this;
+
+        auto layout_direction = OPT_GET("Subtitle/Edit Box/RTL Layout")->GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight;
+        ApplyLayoutDirection(layout_direction);
+        OPT_SUB("Subtitle/Edit Box/RTL Layout", &FrameMain::OnLayoutDirectionChanged, this);
 
 	StartupLog("Apply saved Maximized state");
 	if (OPT_GET("App/Maximized")->GetBool()) Maximize(true);
@@ -184,37 +189,69 @@ void FrameMain::EnableToolBar(agi::OptionValue const& opt) {
 }
 
 void FrameMain::InitContents() {
-	StartupLog("Create background panel");
-	auto Panel = new wxPanel(this, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxCLIP_CHILDREN);
+        StartupLog("Create background panel");
+        panel = new wxPanel(this, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxCLIP_CHILDREN);
+        panel->SetLayoutDirection(GetLayoutDirection());
 
-	StartupLog("Create subtitles grid");
-	context->subsGrid = new BaseGrid(Panel, context.get());
+        StartupLog("Create subtitles grid");
+        context->subsGrid = new BaseGrid(panel, context.get());
+        context->subsGrid->SetLayoutDirection(GetLayoutDirection());
 
-	StartupLog("Create video box");
-	videoBox = new VideoBox(Panel, false, context.get());
+        StartupLog("Create video box");
+        videoBox = new VideoBox(panel, false, context.get());
+        videoBox->SetLayoutDirection(GetLayoutDirection());
 
-	StartupLog("Create audio box");
-	context->audioBox = audioBox = new AudioBox(Panel, context.get());
+        StartupLog("Create audio box");
+        context->audioBox = audioBox = new AudioBox(panel, context.get());
+        audioBox->SetLayoutDirection(GetLayoutDirection());
 
-	StartupLog("Create subtitle editing box");
-	auto EditBox = new SubsEditBox(Panel, context.get());
+        StartupLog("Create subtitle editing box");
+        editBox = new SubsEditBox(panel, context.get(), GetLayoutDirection());
 
-	StartupLog("Arrange main sizers");
-	ToolsSizer = new wxBoxSizer(wxVERTICAL);
-	ToolsSizer->Add(audioBox, 0, wxEXPAND);
-	ToolsSizer->Add(EditBox, 1, wxEXPAND);
-	TopSizer = new wxBoxSizer(wxHORIZONTAL);
-	TopSizer->Add(videoBox, 0, wxEXPAND, 0);
-	TopSizer->Add(ToolsSizer, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
-	MainSizer = new wxBoxSizer(wxVERTICAL);
-	MainSizer->Add(new wxStaticLine(Panel),0,wxEXPAND | wxALL,0);
-	MainSizer->Add(TopSizer,0,wxEXPAND | wxALL,0);
-	MainSizer->Add(context->subsGrid,1,wxEXPAND | wxALL,0);
-	Panel->SetSizer(MainSizer);
+        StartupLog("Arrange main sizers");
+        ToolsSizer = new wxBoxSizer(wxVERTICAL);
+        ToolsSizer->Add(audioBox, 0, wxEXPAND);
+        ToolsSizer->Add(editBox, 1, wxEXPAND);
+        TopSizer = new wxBoxSizer(wxHORIZONTAL);
+        TopSizer->Add(videoBox, 0, wxEXPAND, 0);
+        TopSizer->Add(ToolsSizer, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+        MainSizer = new wxBoxSizer(wxVERTICAL);
+        MainSizer->Add(new wxStaticLine(panel),0,wxEXPAND | wxALL,0);
+        MainSizer->Add(TopSizer,0,wxEXPAND | wxALL,0);
+        MainSizer->Add(context->subsGrid,1,wxEXPAND | wxALL,0);
+        panel->SetSizer(MainSizer);
 
-	StartupLog("Perform layout");
-	Layout();
-	StartupLog("Leaving InitContents");
+        StartupLog("Perform layout");
+        Layout();
+        StartupLog("Leaving InitContents");
+}
+
+void FrameMain::ApplyLayoutDirection(wxLayoutDirection direction) {
+        SetLayoutDirection(direction);
+
+        if (panel)
+                panel->SetLayoutDirection(direction);
+
+        if (context->subsGrid)
+                context->subsGrid->SetLayoutDirection(direction);
+
+        if (videoBox)
+                videoBox->SetLayoutDirection(direction);
+
+        if (audioBox)
+                audioBox->SetLayoutDirection(direction);
+
+        if (editBox)
+                editBox->ApplyLayoutDirection(direction);
+}
+
+void FrameMain::OnLayoutDirectionChanged(agi::OptionValue const& opt) {
+        auto direction = opt.GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight;
+        ApplyLayoutDirection(direction);
+
+        if (panel)
+                panel->Layout();
+        Layout();
 }
 
 void FrameMain::SetDisplayMode(int video, int audio) {
