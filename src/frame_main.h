@@ -74,14 +74,14 @@ class FrameMain : public wxFrame {
 
 	void EnableToolBar(agi::OptionValue const& opt);
 
-        AudioBox *audioBox;      ///< The audio area
-        VideoBox *videoBox;      ///< The video area
+        AudioBox *audioBox = nullptr;      ///< The audio area
+        VideoBox *videoBox = nullptr;      ///< The video area
         SubsEditBox *editBox = nullptr; ///< The subtitle editing area
         wxPanel *panel = nullptr; ///< Background container for top-level controls
 
-	wxSizer *MainSizer;  ///< Arranges things from top to bottom in the window
-	wxSizer *TopSizer;   ///< Arranges video box and tool box from left to right
-	wxSizer *ToolsSizer; ///< Arranges audio and editing areas top to bottom
+        wxSizer *MainSizer = nullptr;  ///< Arranges things from top to bottom in the window
+        wxSizer *TopSizer = nullptr;   ///< Arranges video box and tool box from left to right
+        wxSizer *ToolsSizer = nullptr; ///< Arranges audio and editing areas top to bottom
 
 public:
 	FrameMain();
