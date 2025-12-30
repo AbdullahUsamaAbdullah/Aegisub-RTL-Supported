@@ -191,19 +191,14 @@ void FrameMain::EnableToolBar(agi::OptionValue const& opt) {
 void FrameMain::InitContents() {
         StartupLog("Create background panel");
         panel = new wxPanel(this, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxCLIP_CHILDREN);
-        panel->SetLayoutDirection(GetLayoutDirection());
-
         StartupLog("Create subtitles grid");
         context->subsGrid = new BaseGrid(panel, context.get());
-        context->subsGrid->SetLayoutDirection(GetLayoutDirection());
 
         StartupLog("Create video box");
         videoBox = new VideoBox(panel, false, context.get());
-        videoBox->SetLayoutDirection(GetLayoutDirection());
 
         StartupLog("Create audio box");
         context->audioBox = audioBox = new AudioBox(panel, context.get());
-        audioBox->SetLayoutDirection(GetLayoutDirection());
 
         StartupLog("Create subtitle editing box");
         editBox = new SubsEditBox(panel, context.get(), GetLayoutDirection());
@@ -227,20 +222,6 @@ void FrameMain::InitContents() {
 }
 
 void FrameMain::ApplyLayoutDirection(wxLayoutDirection direction) {
-        SetLayoutDirection(direction);
-
-        if (panel)
-                panel->SetLayoutDirection(direction);
-
-        if (context->subsGrid)
-                context->subsGrid->SetLayoutDirection(direction);
-
-        if (videoBox)
-                videoBox->SetLayoutDirection(direction);
-
-        if (audioBox)
-                audioBox->SetLayoutDirection(direction);
-
         if (editBox)
                 editBox->ApplyLayoutDirection(direction);
 }

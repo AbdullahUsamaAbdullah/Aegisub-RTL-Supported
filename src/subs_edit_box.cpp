@@ -260,35 +260,41 @@ SubsEditBox::~SubsEditBox() {
 
 void SubsEditBox::ApplyLayoutDirection(wxLayoutDirection direction) {
         layout_dir = direction;
-        SetLayoutDirection(direction);
+        SetLayoutDirection(wxLayout_LeftToRight);
 
-        auto apply = [direction](wxWindow *window) {
+        auto apply_ltr = [](wxWindow *window) {
+                if (window)
+                        window->SetLayoutDirection(wxLayout_LeftToRight);
+        };
+
+        auto apply_direction = [direction](wxWindow *window) {
                 if (window)
                         window->SetLayoutDirection(direction);
         };
 
-        apply(comment_box);
-        apply(style_box);
-        apply(style_edit_button);
-        apply(actor_box);
-        apply(effect_box);
-        apply(char_count);
-        apply(layer);
-        apply(start_time);
-        apply(end_time);
-        apply(duration);
+        apply_ltr(comment_box);
+        apply_ltr(style_box);
+        apply_ltr(style_edit_button);
+        apply_ltr(actor_box);
+        apply_ltr(effect_box);
+        apply_ltr(char_count);
+        apply_ltr(layer);
+        apply_ltr(start_time);
+        apply_ltr(end_time);
+        apply_ltr(duration);
         for (auto ctrl : margin)
-                apply(ctrl);
-        apply(by_time);
-        apply(by_frame);
-        apply(split_box);
-        apply(secondary_editor);
-        apply(edit_ctrl);
+                apply_ltr(ctrl);
+        apply_ltr(by_time);
+        apply_ltr(by_frame);
+        apply_ltr(split_box);
+
+        apply_direction(secondary_editor);
+        apply_direction(edit_ctrl);
 
         if (split_box_item) {
                 wxSizerFlags flags;
                 flags.Center();
-                flags.Align(direction == wxLayout_RightToLeft ? wxALIGN_RIGHT : wxALIGN_LEFT);
+                flags.Align(wxALIGN_LEFT);
                 split_box_item->SetFlag(flags.GetFlags());
         }
 
