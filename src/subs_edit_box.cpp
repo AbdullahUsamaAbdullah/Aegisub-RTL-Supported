@@ -261,41 +261,38 @@ SubsEditBox::~SubsEditBox() {
 
 void SubsEditBox::ApplyLayoutDirection(wxLayoutDirection direction) {
         layout_dir = direction;
-        SetLayoutDirection(wxLayout_LeftToRight);
-
-        auto apply_ltr = [](wxWindow *window) {
-                if (window)
-                        window->SetLayoutDirection(wxLayout_LeftToRight);
-        };
+        SetLayoutDirection(direction);
 
         auto apply_direction = [direction](wxWindow *window) {
                 if (window)
                         window->SetLayoutDirection(direction);
         };
 
-        apply_ltr(comment_box);
-        apply_ltr(style_box);
-        apply_ltr(style_edit_button);
-        apply_ltr(actor_box);
-        apply_ltr(effect_box);
-        apply_ltr(char_count);
-        apply_ltr(layer);
-        apply_ltr(start_time);
-        apply_ltr(end_time);
-        apply_ltr(duration);
+        apply_direction(comment_box);
+        apply_direction(style_box);
+        apply_direction(style_edit_button);
+        apply_direction(actor_box);
+        apply_direction(effect_box);
+        apply_direction(char_count);
+        apply_direction(layer);
+        apply_direction(start_time);
+        apply_direction(end_time);
+        apply_direction(duration);
         for (auto ctrl : margin)
-                apply_ltr(ctrl);
-        apply_ltr(by_time);
-        apply_ltr(by_frame);
-        apply_ltr(split_box);
-
+                apply_direction(ctrl);
+        apply_direction(by_time);
+        apply_direction(by_frame);
+        apply_direction(split_box);
         apply_direction(secondary_editor);
         apply_direction(edit_ctrl);
+
+        if (edit_ctrl)
+                edit_ctrl->SetBidirectionalLayout(direction == wxLayout_RightToLeft);
 
         if (split_box_item) {
                 wxSizerFlags flags;
                 flags.Center();
-                flags.Align(wxALIGN_LEFT);
+                flags.Align(direction == wxLayout_RightToLeft ? wxALIGN_RIGHT : wxALIGN_LEFT);
                 split_box_item->SetFlag(flags.GetFlags());
         }
 

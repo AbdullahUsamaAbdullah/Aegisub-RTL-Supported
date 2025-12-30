@@ -118,6 +118,9 @@ public:
         SubsTextEditCtrl(wxWindow* parent, wxSize size, long style, agi::Context *context, bool rtl_layout);
         ~SubsTextEditCtrl();
 
+        /// Update bidirectional layout and shaping support when the UI layout direction changes
+        void SetBidirectionalLayout(bool rtl_layout);
+
         /// Whether the underlying Scintilla build exposes bidi shaping controls
         static bool SupportsBidirectionalRendering();
 
