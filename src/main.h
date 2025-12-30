@@ -61,11 +61,13 @@ class AegisubApp : public wxApp {
 
 	std::vector<FrameMain *> frames;
 public:
-	AegisubApp();
-	AegisubLocale locale;
+        AegisubApp();
+        AegisubLocale locale;
 
-	agi::Context& NewProjectContext();
-	void CloseAll();
+        void ApplyLocaleSpecificLayoutPreferences(std::string const& language, bool prompt_user);
+
+        agi::Context& NewProjectContext();
+        void CloseAll();
 
 	// Apple events
 	void MacOpenFiles(wxArrayString const& filenames)

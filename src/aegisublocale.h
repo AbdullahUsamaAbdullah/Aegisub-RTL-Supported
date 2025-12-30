@@ -36,7 +36,8 @@ class AegisubLocale {
 	wxTranslations *GetTranslations();
 
 public:
-	void Init(std::string const& language);
-	bool HasLanguage(std::string const& language);
-	std::string PickLanguage();
+        void Init(std::string const& language);
+        bool HasLanguage(std::string const& language);
+        std::string PickLanguage();
+        bool IsRTLLanguage(std::string const& language) const;
 };
