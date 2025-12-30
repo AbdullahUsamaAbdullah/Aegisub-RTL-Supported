@@ -174,6 +174,10 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 SubsTextEditCtrl::~SubsTextEditCtrl() {
 }
 
+void SubsTextEditCtrl::SetBidirectionalLayout(bool rtl_layout) {
+        ConfigureBidirectionalSupport(rtl_layout);
+}
+
 bool SubsTextEditCtrl::SupportsBidirectionalRendering() {
 #if defined(WX_STC_HAS_BIDI) || defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
         return true;

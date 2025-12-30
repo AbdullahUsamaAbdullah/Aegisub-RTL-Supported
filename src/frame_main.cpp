@@ -228,11 +228,33 @@ void FrameMain::ApplyLayoutDirection(wxLayoutDirection direction) {
 
 void FrameMain::OnLayoutDirectionChanged(agi::OptionValue const& opt) {
         auto direction = opt.GetBool() ? wxLayout_RightToLeft : wxLayout_LeftToRight;
+        SetLayoutDirection(direction);
+        if (panel)
+                panel->SetLayoutDirection(direction);
+
+        bool didFreeze = IsFrozen();
+        if (!didFreeze)
+                Freeze();
+
+        if (ToolsSizer && editBox) {
+                ToolsSizer->Detach(editBox);
+                editBox->Destroy();
+                editBox = new SubsEditBox(panel, context.get(), direction);
+                ToolsSizer->Add(editBox, 1, wxEXPAND);
+        }
+
         ApplyLayoutDirection(direction);
 
+        if (ToolsSizer)
+                ToolsSizer->Layout();
         if (panel)
                 panel->Layout();
         Layout();
+
+        if (!didFreeze)
+                Thaw();
+
+        StatusTimeout(direction == wxLayout_RightToLeft ? _("Switched to right-to-left layout") : _("Switched to left-to-right layout"), 3000);
 }
 
 void FrameMain::SetDisplayMode(int video, int audio) {
