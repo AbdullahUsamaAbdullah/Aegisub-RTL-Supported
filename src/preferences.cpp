@@ -31,6 +31,7 @@
 #include "libresrc/libresrc.h"
 #include "options.h"
 #include "preferences_base.h"
+#include "subs_edit_ctrl.h"
 #include "video_provider_manager.h"
 
 #ifdef WITH_PORTAUDIO
@@ -216,7 +217,13 @@ void Interface(wxTreebook *book, Preferences *parent) {
         p->OptionAdd(edit_box, _("Overwrite in time boxes"), "Subtitle/Time Edit/Insert Mode");
         p->OptionAdd(edit_box, _("Shift+Enter adds \\n"), "Subtitle/Edit Box/Soft Line Break");
         p->OptionAdd(edit_box, _("Enable syntax highlighting"), "Subtitle/Highlight/Syntax");
-        p->OptionAdd(edit_box, _("Use right-to-left interface layout"), "Subtitle/Edit Box/RTL Layout");
+        auto rtl_layout = p->OptionAdd(edit_box, _("Use right-to-left interface layout"), "Subtitle/Edit Box/RTL Layout");
+        if (!SubsTextEditCtrl::SupportsBidirectionalRendering()) {
+                rtl_layout->Enable(false);
+                rtl_layout->SetToolTip(_(L"Full RTL rendering requires wxWidgets built with Scintilla bidirectional support "
+                        L"(wxSTC_BIDIRECTIONAL_* or SCI_SETBIDIRECTIONAL), such as wxStyledTextCtrl using Windows DirectWrite "
+                        L"or a modern GTK/Harfbuzz build."));
+        }
         p->OptionBrowse(edit_box, _("Dictionaries path"), "Path/Dictionary");
         p->OptionFont(edit_box, "Subtitle/Edit Box/");
 

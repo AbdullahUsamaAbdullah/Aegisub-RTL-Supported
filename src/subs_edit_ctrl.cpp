@@ -52,6 +52,7 @@
 
 #include <wx/clipbrd.h>
 #include <wx/intl.h>
+#include <wx/log.h>
 #include <wx/menu.h>
 #include <wx/settings.h>
 
@@ -172,6 +173,14 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 SubsTextEditCtrl::~SubsTextEditCtrl() {
 }
 
+bool SubsTextEditCtrl::SupportsBidirectionalRendering() {
+#if defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
+        return true;
+#else
+        return false;
+#endif
+}
+
 void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
 #if defined(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN) || defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
 #ifdef __WXMSW__
@@ -182,6 +191,12 @@ void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
 #elif defined(wxSTC_TECHNOLOGY_DEFAULT)
         // Fall back to the toolkit's default shaping path (e.g. Harfbuzz on GTK)
         SetTechnology(wxSTC_TECHNOLOGY_DEFAULT);
+#endif
+
+#if defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
+        const bool bidi_supported = true;
+#else
+        const bool bidi_supported = false;
 #endif
 
 #ifdef wxSTC_BIDIRECTIONAL_R2L
@@ -201,6 +216,22 @@ void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
         // No Scintilla bidi support; fall back to native layout so caret and selections stay aligned
         SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
 #endif
+
+        if (rtl_layout && !bidi_supported) {
+                static bool warned = false;
+                if (!warned) {
+                        warned = true;
+                        wxString warning = _(L"Right-to-left interface layout is enabled, but this build of wxWidgets/Scintilla "
+                                L"does not expose bidirectional shaping (wxSTC_BIDIRECTIONAL_* or SCI_SETBIDIRECTIONAL). Full RTL "
+                                L"rendering requires a wxStyledTextCtrl built with modern Scintilla support, such as wxWidgets "
+                                L"3.2+ built against a bidi-capable Scintilla or Windows DirectWrite.");
+
+                        if (context && context->frame)
+                                context->frame->StatusTimeout(warning);
+
+                        wxLogWarning("%s", warning);
+                }
+        }
 }
 
 void SubsTextEditCtrl::Subscribe(std::string const& name) {
