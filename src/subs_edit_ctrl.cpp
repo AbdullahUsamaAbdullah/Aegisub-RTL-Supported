@@ -33,6 +33,7 @@
 #include "command/command.h"
 #include "compat.h"
 #include "format.h"
+#include "frame_main.h"
 #include "options.h"
 #include "include/aegisub/context.h"
 #include "include/aegisub/spellchecker.h"
