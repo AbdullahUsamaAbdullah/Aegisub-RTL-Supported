@@ -106,6 +106,7 @@ aegisub_src = files(
     'preferences_base.cpp',
     'project.cpp',
     'resolution_resampler.cpp',
+    'rtl_text_fallback.cpp',
     'search_replace_engine.cpp',
     'selection_controller.cpp',
     'spellchecker.cpp',
