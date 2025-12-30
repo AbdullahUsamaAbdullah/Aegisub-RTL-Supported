@@ -109,6 +109,24 @@ AegisubApp::AegisubApp() {
 
 }
 
+void AegisubApp::ApplyLocaleSpecificLayoutPreferences(std::string const& language, bool prompt_user) {
+        if (!locale.IsRTLLanguage(language)) return;
+
+        if (!OPT_GET("Subtitle/Edit Box/RTL Layout Follows UI Language")->GetBool()) return;
+
+        if (OPT_GET("Subtitle/Edit Box/RTL Layout")->GetBool()) return;
+
+        if (!prompt_user) {
+		OPT_SET("Subtitle/Edit Box/RTL Layout")->SetBool(true);
+		return;
+        }
+
+        auto result = wxMessageBox(_("The selected interface language reads from right to left. Enable the right-to-left interface layout for the subtitle editor?"),
+		_("Right-to-left layout"), wxYES_NO | wxICON_INFORMATION | wxCENTRE);
+        if (result == wxYES)
+		OPT_SET("Subtitle/Edit Box/RTL Layout")->SetBool(true);
+}
+
 namespace {
 wxDEFINE_EVENT(EVT_CALL_THUNK, ValueEvent<agi::dispatch::Thunk>);
 }
@@ -242,9 +260,10 @@ bool AegisubApp::OnInit() {
 		// Set locale
 		auto lang = OPT_GET("App/Language")->GetString();
 		if (lang.empty() || (lang != "en_US" && !locale.HasLanguage(lang))) {
-			lang = locale.PickLanguage();
-			OPT_SET("App/Language")->SetString(lang);
+		        lang = locale.PickLanguage();
+		        OPT_SET("App/Language")->SetString(lang);
 		}
+		ApplyLocaleSpecificLayoutPreferences(lang, false);
 		locale.Init(lang);
 
 #ifdef __APPLE__

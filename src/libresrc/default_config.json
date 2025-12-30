@@ -382,6 +382,7 @@
 		},
                 "Edit Box" : {
                         "RTL Layout": false,
+                        "RTL Layout Follows UI Language": true,
                         "Soft Line Break": false,
                         "Font Face" : "",
                         "Font Size" : 10

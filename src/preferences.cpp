@@ -217,13 +217,15 @@ void Interface(wxTreebook *book, Preferences *parent) {
         p->OptionAdd(edit_box, _("Overwrite in time boxes"), "Subtitle/Time Edit/Insert Mode");
         p->OptionAdd(edit_box, _("Shift+Enter adds \\n"), "Subtitle/Edit Box/Soft Line Break");
         p->OptionAdd(edit_box, _("Enable syntax highlighting"), "Subtitle/Highlight/Syntax");
-        auto rtl_layout = p->OptionAdd(edit_box, _("Use right-to-left interface layout"), "Subtitle/Edit Box/RTL Layout");
+        auto rtl_layout = p->OptionAdd(edit_box, _("Use right-to-left interface layout (recommended for RTL languages)"), "Subtitle/Edit Box/RTL Layout");
+        wxString rtl_tooltip = _("Mirrors the subtitle editor and related panels when the interface language is right-to-left. This will be offered automatically after choosing an RTL UI language.");
         if (!SubsTextEditCtrl::SupportsBidirectionalRendering()) {
                 rtl_layout->Enable(false);
-                rtl_layout->SetToolTip(_(L"Full RTL rendering requires wxWidgets built with Scintilla bidirectional support "
+                rtl_tooltip << "\n\n" << _(L"Full RTL rendering requires wxWidgets built with Scintilla bidirectional support "
                         L"(wxSTC_BIDIRECTIONAL_* or SCI_SETBIDIRECTIONAL), such as wxStyledTextCtrl using Windows DirectWrite "
-                        L"or a modern GTK/Harfbuzz build."));
+                        L"or a modern GTK/Harfbuzz build.");
         }
+        rtl_layout->SetToolTip(rtl_tooltip);
         p->OptionBrowse(edit_box, _("Dictionaries path"), "Path/Dictionary");
         p->OptionFont(edit_box, "Subtitle/Edit Box/");
 

@@ -41,7 +41,9 @@
 #include <libaegisub/path.h>
 
 #include <algorithm>
+#include <array>
 #include <clocale>
+#include <cctype>
 #include <functional>
 #include <wx/intl.h>
 #include <wx/choicdlg.h> // Keep this last so wxUSE_CHOICEDLG is set.
@@ -78,11 +80,30 @@ bool AegisubLocale::HasLanguage(std::string const& language) {
 	return std::find(langs.begin(), langs.end(), to_wx(language)) != langs.end();
 }
 
+bool AegisubLocale::IsRTLLanguage(std::string const& language) const {
+	auto normalized = language;
+	auto cutoff = normalized.find_first_of(".@");
+	if (cutoff != std::string::npos)
+		normalized.erase(cutoff);
+
+	std::transform(normalized.begin(), normalized.end(), normalized.begin(), [](unsigned char ch) {
+		return static_cast<char>(std::tolower(ch));
+	});
+
+	static const std::array<std::string, 8> rtl_languages = { { "ar", "fa", "he", "iw", "ur", "ug", "ps", "yi" } };
+	for (auto const& rtl : rtl_languages) {
+		if (normalized == rtl || normalized.rfind(rtl + "_", 0) == 0 || normalized.rfind(rtl + "-", 0) == 0)
+			return true;
+	}
+
+	return false;
+}
+
 std::string AegisubLocale::PickLanguage() {
 	if (active_language.empty()) {
 		wxString os_ui_language = GetTranslations()->GetBestTranslation(AEGISUB_CATALOG);
 		if (!os_ui_language.empty())
-			return from_wx(os_ui_language);
+		        return from_wx(os_ui_language);
 	}
 
 	wxArrayString langs = GetTranslations()->GetAvailableTranslations(AEGISUB_CATALOG);
