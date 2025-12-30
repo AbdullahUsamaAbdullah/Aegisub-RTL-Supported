@@ -116,8 +116,11 @@ public:
         SubsTextEditCtrl(wxWindow* parent, wxSize size, long style, agi::Context *context, bool rtl_layout);
         ~SubsTextEditCtrl();
 
-	void SetTextTo(std::string const& text);
-	void Paste() override;
+        /// Whether the underlying Scintilla build exposes bidi shaping controls
+        static bool SupportsBidirectionalRendering();
+
+        void SetTextTo(std::string const& text);
+        void Paste() override;
 
 	std::pair<int, int> GetBoundsOfWordAtPosition(int pos);
 
