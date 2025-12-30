@@ -184,7 +184,11 @@ bool SubsTextEditCtrl::SupportsBidirectionalRendering() {
 void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
 #if defined(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN) || defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
 #ifdef __WXMSW__
+#if defined(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN)
         SetTechnology(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN);
+#elif defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
+        SetTechnology(wxSTC_TECHNOLOGY_DIRECTWRITE);
+#endif
 #elif defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
         SetTechnology(wxSTC_TECHNOLOGY_DIRECTWRITE);
 #endif
