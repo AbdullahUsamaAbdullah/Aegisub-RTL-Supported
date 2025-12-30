@@ -1,5 +1,7 @@
 [wrap-git]
 directory = wxWidgets
 url = https://github.com/wxWidgets/wxWidgets.git
-revision = 3.2
+# Track the latest development branch so we pick up the bidi-capable
+# wxStyledTextCtrl/Scintilla stack with Harfbuzz and DirectWrite pipelines.
+revision = master
 clone-recursive = true

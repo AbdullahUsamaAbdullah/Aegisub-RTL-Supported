@@ -41,7 +41,6 @@
 #include "text_selection_controller.h"
 #include "thesaurus.h"
 #include "utils.h"
-#include "rtl_text_fallback.h"
 
 #include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/calltip_provider.h>
@@ -89,7 +88,6 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 , spellchecker(SpellCheckerFactory::GetSpellChecker())
 , thesaurus(std::make_unique<Thesaurus>())
 , context(context)
-, use_bidi_fallback(rtl_layout)
 {
         // Set properties
         SetWrapMode(wxSTC_WRAP_WORD);
@@ -129,8 +127,6 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
         Bind(wxEVT_CONTEXT_MENU, &SubsTextEditCtrl::OnContextMenu, this);
         Bind(wxEVT_IDLE, std::bind(&SubsTextEditCtrl::UpdateCallTip, this));
         Bind(wxEVT_STC_DOUBLECLICK, &SubsTextEditCtrl::OnDoubleClick, this);
-        if (use_bidi_fallback)
-                Bind(wxEVT_STC_CHANGE, &SubsTextEditCtrl::OnContentChange, this);
         Bind(wxEVT_STC_STYLENEEDED, [this](wxStyledTextEvent&) {
                 {
                         std::string text = GetTextRaw().data();
@@ -176,31 +172,6 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 }
 
 SubsTextEditCtrl::~SubsTextEditCtrl() {
-}
-
-std::string SubsTextEditCtrl::PrepareTextForDisplay(std::string const& text) const {
-        if (!use_bidi_fallback)
-                return text;
-
-        return ApplyBidirectionalFallback(text, GetLayoutDirection() == wxLayout_RightToLeft);
-}
-
-void SubsTextEditCtrl::OnContentChange(wxStyledTextEvent&) {
-        if (!use_bidi_fallback || suppress_bidi_refresh)
-                return;
-
-        std::string raw = GetTextRaw().data();
-        std::string reshaped = PrepareTextForDisplay(raw);
-        if (reshaped == raw)
-                return;
-
-        const auto sel_start = GetSelectionStart();
-        const auto sel_end = GetSelectionEnd();
-
-        suppress_bidi_refresh = true;
-        SetTextRaw(reshaped.c_str());
-        SetSelection(sel_start, sel_end);
-        suppress_bidi_refresh = false;
 }
 
 bool SubsTextEditCtrl::SupportsBidirectionalRendering() {
@@ -300,7 +271,7 @@ void SubsTextEditCtrl::OnKeyDown(wxKeyEvent &event) {
 		std::string data(old.data(), sel_start);
 		data.append(OPT_GET("Subtitle/Edit Box/Soft Line Break")->GetBool() ? "\\n" : "\\N");
 		data.append(old.data() + sel_end, old.length() - sel_end);
-                SetTextRaw(PrepareTextForDisplay(data).c_str());
+                SetTextRaw(data.c_str());
 
 		SetSelection(sel_start + 2, sel_start + 2);
 		event.Skip(false);
@@ -423,13 +394,13 @@ void SubsTextEditCtrl::SetTextTo(std::string const& text) {
 
 	if (context) {
 		context->textSelectionController->SetSelection(0, 0);
-                SetTextRaw(PrepareTextForDisplay(text).c_str());
+                SetTextRaw(text.c_str());
 		auto pos = agi::IndexOfCharacter(text, old_pos);
 		context->textSelectionController->SetSelection(pos, pos);
 	}
 	else {
 		SetSelection(0, 0);
-                SetTextRaw(PrepareTextForDisplay(text).c_str());
+                SetTextRaw(text.c_str());
 		auto pos = agi::IndexOfCharacter(text, old_pos);
 		SetSelection(pos, pos);
 	}
@@ -450,7 +421,7 @@ void SubsTextEditCtrl::Paste() {
 	int sel_start = data.size();
 	data.append(old.data() + GetSelectionEnd());
 
-        SetTextRaw(PrepareTextForDisplay(data).c_str());
+        SetTextRaw(data.c_str());
 
 	SetSelectionStart(sel_start);
 	SetSelectionEnd(sel_start);
@@ -628,7 +599,7 @@ void SubsTextEditCtrl::OnUseSuggestion(wxCommandEvent &event) {
 	// line_text needs to get cleared before SetTextRaw to ensure it gets reparsed
 	std::string new_text;
 	swap(line_text, new_text);
-        SetTextRaw(PrepareTextForDisplay(new_text.replace(currentWordPos.first, currentWordPos.second, suggestion)).c_str());
+        SetTextRaw(new_text.replace(currentWordPos.first, currentWordPos.second, suggestion).c_str());
 
 	SetSelection(currentWordPos.first, currentWordPos.first + suggestion.size());
 	SetFocus();
