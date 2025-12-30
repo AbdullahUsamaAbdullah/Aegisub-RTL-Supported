@@ -34,10 +34,12 @@
 
 class Thesaurus;
 namespace agi {
-	class SpellChecker;
-	struct Context;
-	namespace ass { struct DialogueToken; }
+        class SpellChecker;
+        struct Context;
+        namespace ass { struct DialogueToken; }
 }
+
+class wxStyledTextEvent;
 
 /// @class SubsTextEditCtrl
 /// @brief A Scintilla control with spell checking and syntax highlighting
@@ -48,11 +50,15 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	/// Backend thesaurus to use
 	std::unique_ptr<Thesaurus> thesaurus;
 
-	/// Project context, for splitting lines
-	agi::Context *context;
+        /// Project context, for splitting lines
+        agi::Context *context;
 
-	/// The word right-clicked on, used for spellchecker replacing
-	std::string currentWord;
+        /// Whether we need to manually shape RTL text because Scintilla lacks bidi
+        /// rendering.
+        const bool use_bidi_fallback;
+
+        /// The word right-clicked on, used for spellchecker replacing
+        std::string currentWord;
 
 	/// The beginning of the word right-clicked on, for spellchecker replacing
 	std::pair<int, int> currentWordPos;
@@ -73,9 +79,12 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	/// Cursor position which the current calltip is for
 	int cursor_pos;
 
-	/// The last seen line text, used to avoid reparsing the line for syntax
-	/// highlighting when possible
-	std::string line_text;
+        /// The last seen line text, used to avoid reparsing the line for syntax
+        /// highlighting when possible
+        std::string line_text;
+
+        /// Avoid recursive updates while applying the fallback shaper.
+        bool suppress_bidi_refresh = false;
 
 	/// Tokenized version of line_text
 	std::vector<agi::ass::DialogueToken> tokenized_line;
@@ -93,9 +102,11 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 
         /// Configure bidirectional layout/rendering for RTL scripts when supported
         void ConfigureBidirectionalSupport(bool rtl_layout);
+        std::string PrepareTextForDisplay(std::string const& text) const;
+        void OnContentChange(wxStyledTextEvent& event);
 
-	void StyleSpellCheck();
-	void UpdateCallTip();
+        void StyleSpellCheck();
+        void UpdateCallTip();
 	void SetStyles();
 
 	void UpdateStyle();
