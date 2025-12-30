@@ -211,13 +211,14 @@ void Video(wxTreebook *book, Preferences *parent) {
 void Interface(wxTreebook *book, Preferences *parent) {
 	auto p = new OptionPage(book, parent, _("Interface"));
 
-	auto edit_box = p->PageSizer(_("Edit Box"));
-	p->OptionAdd(edit_box, _("Enable call tips"), "App/Call Tips");
-	p->OptionAdd(edit_box, _("Overwrite in time boxes"), "Subtitle/Time Edit/Insert Mode");
-	p->OptionAdd(edit_box, _("Shift+Enter adds \\n"), "Subtitle/Edit Box/Soft Line Break");
-	p->OptionAdd(edit_box, _("Enable syntax highlighting"), "Subtitle/Highlight/Syntax");
-	p->OptionBrowse(edit_box, _("Dictionaries path"), "Path/Dictionary");
-	p->OptionFont(edit_box, "Subtitle/Edit Box/");
+        auto edit_box = p->PageSizer(_("Edit Box"));
+        p->OptionAdd(edit_box, _("Enable call tips"), "App/Call Tips");
+        p->OptionAdd(edit_box, _("Overwrite in time boxes"), "Subtitle/Time Edit/Insert Mode");
+        p->OptionAdd(edit_box, _("Shift+Enter adds \\n"), "Subtitle/Edit Box/Soft Line Break");
+        p->OptionAdd(edit_box, _("Enable syntax highlighting"), "Subtitle/Highlight/Syntax");
+        p->OptionAdd(edit_box, _("Use right-to-left interface layout"), "Subtitle/Edit Box/RTL Layout");
+        p->OptionBrowse(edit_box, _("Dictionaries path"), "Path/Dictionary");
+        p->OptionFont(edit_box, "Subtitle/Edit Box/");
 
 	auto character_count = p->PageSizer(_("Character Counter"));
 	p->OptionAdd(character_count, _("Maximum characters per line"), "Subtitle/Character Limit", 0, 1000);

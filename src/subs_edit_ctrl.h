@@ -92,7 +92,7 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
         void Subscribe(std::string const& name);
 
         /// Configure bidirectional layout/rendering for RTL scripts when supported
-        void ConfigureBidirectionalSupport();
+        void ConfigureBidirectionalSupport(bool rtl_layout);
 
 	void StyleSpellCheck();
 	void UpdateCallTip();
@@ -113,8 +113,8 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	wxMenu *GetLanguagesMenu(int base_id, wxString const& curLang, wxArrayString const& langs);
 
 public:
-	SubsTextEditCtrl(wxWindow* parent, wxSize size, long style, agi::Context *context);
-	~SubsTextEditCtrl();
+        SubsTextEditCtrl(wxWindow* parent, wxSize size, long style, agi::Context *context, bool rtl_layout);
+        ~SubsTextEditCtrl();
 
 	void SetTextTo(std::string const& text);
 	void Paste() override;

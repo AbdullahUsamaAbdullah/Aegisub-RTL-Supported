@@ -380,11 +380,12 @@
 			"Height" : 720,
 			"Width" : 1280
 		},
-		"Edit Box" : {
-			"Soft Line Break": false,
-			"Font Face" : "",
-			"Font Size" : 10
-		},
+                "Edit Box" : {
+                        "RTL Layout": false,
+                        "Soft Line Break": false,
+                        "Font Face" : "",
+                        "Font Size" : 10
+                },
 		"Grid" : {
 			"Column" : [
 				{"bool" : true}
