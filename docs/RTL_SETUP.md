@@ -13,14 +13,20 @@ This guide explains why the **Use right-to-left interface layout** option can be
 4. If you pick an RTL UI language and leave **RTL Layout Follows UI Language** enabled, Aegisub will also prompt to turn this on automatically.
 
 ## Building with bidirectional Scintilla support
-You need a wxWidgets build that exposes Scintilla’s bidirectional APIs. The rest of Aegisub’s dependencies follow the platform-specific instructions already in `README.md`; the additional work is ensuring wxWidgets (and its bundled or external Scintilla) is bidi-enabled.
+You need a wxWidgets build that exposes Scintilla’s bidirectional APIs **and** the text-shaping stack used by Aegisub (`ICU + HarfBuzz + FriBidi`). The rest of Aegisub’s dependencies follow the platform-specific instructions already in `README.md`; the additional work is ensuring wxWidgets (and its bundled or external Scintilla) is bidi-enabled and that FriBidi is present for shaping.
 
-Meson now enforces this requirement during configuration:
+Meson now enforces these requirements during configuration:
 
 - If a system wxWidgets is found with bidi-capable Scintilla headers, it is used.
 - If the headers are missing `wxSTC_BIDIRECTIONAL_*`/`SCI_SETBIDIRECTIONAL`, configuration fails unless the bundled fallback is enabled.
+- FriBidi must be available for the RTL shaper. Use `-Dfribidi=enabled` (default) to allow Meson to use your system `libfribidi` or fall back to the bundled `subprojects/fribidi.wrap`. Set `-Dfribidi=disabled` only if you intentionally want configuration to fail when FriBidi is absent.
 - The bundled fallback is on by default: `-Dwx_bundled_bidi=true` builds wxWidgets/Scintilla as a subproject with bidi flags enabled. On Windows this also turns on DirectWrite/Direct2D; on other toolkits it keeps Harfbuzz shaping enabled. Disable it (`-Dwx_bundled_bidi=false`) only if you want configuration to hard-fail instead of using the bundled copy.
 - You can still force extra DirectWrite toggles for the bundled build with `-Dwx_direct2d=true`.
+
+### Using FriBidi (system vs. bundled)
+- **System:** Install `libfribidi` (or the equivalent package for your OS) and keep `-Dfribidi=enabled` so Meson detects it.
+- **Bundled:** Leave `subprojects/fribidi.wrap` in place; Meson will download/build FriBidi automatically when a system copy is unavailable.
+- **Debugging:** If Meson errors with “FriBidi is required for RTL text shaping,” either install the system package or re-run configuration without deleting the wrap. Use `meson setup builddir … --reconfigure` after fixing the dependency.
 
 ### Windows (DirectWrite)
 1. Install the Windows build prerequisites from `README.md` (Visual Studio, Python 3, Meson, CMake, and optional tools if you need installers).
