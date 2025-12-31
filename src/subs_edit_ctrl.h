@@ -29,6 +29,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <wx/stc/stc.h>
 
@@ -65,9 +66,9 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 	/// Thesaurus suggestions for the last right-clicked word
 	std::vector<std::string> thesSugs;
 
-	/// Text of the currently shown calltip, to avoid flickering from
-	/// pointlessly reshowing the current tip
-	std::string calltip_text;
+        /// Text of the currently shown calltip, to avoid flickering from
+        /// pointlessly reshowing the current tip
+        std::string calltip_text;
 
 	/// Position of the currently show calltip
 	size_t calltip_position = 0;
@@ -79,8 +80,20 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
         /// highlighting when possible
         std::string line_text;
 
-	/// Tokenized version of line_text
-	std::vector<agi::ass::DialogueToken> tokenized_line;
+        /// Normalized copy of line_text used for bidirectional classification
+        std::string normalized_line_text;
+
+        /// Tokenized version of line_text
+        std::vector<agi::ass::DialogueToken> tokenized_line;
+
+        /// Whether the underlying Scintilla build exposes bidi shaping controls
+        bool bidi_path_available = false;
+
+        /// The UI layout hint used before per-line bidi analysis runs
+        bool default_rtl_layout = false;
+
+        /// Cache of the last applied bidi direction to avoid redundant updates
+        bool last_applied_rtl = false;
 
 	void OnContextMenu(wxContextMenuEvent &);
 	void OnDoubleClick(wxStyledTextEvent&);
@@ -95,6 +108,12 @@ class SubsTextEditCtrl final : public wxStyledTextCtrl {
 
         /// Configure bidirectional layout/rendering for RTL scripts when supported
         void ConfigureBidirectionalSupport(bool rtl_layout);
+
+        /// Apply bidirectional flags to Scintilla/wx based on a desired direction
+        void ApplyBidirectionalDirection(bool rtl_layout);
+
+        /// Update bidirectional hints for the current line using ICU/FriBidi
+        void UpdateBidirectionalFromText(std::string_view text);
 
         void StyleSpellCheck();
         void UpdateCallTip();
