@@ -46,10 +46,15 @@
 #include <libaegisub/calltip_provider.h>
 #include <libaegisub/character_count.h>
 #include <libaegisub/spellchecker.h>
+#include <libaegisub/unicode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <functional>
+
+#ifdef WITH_FRIBIDI
+#include <fribidi.h>
+#endif
 
 #include <wx/clipbrd.h>
 #include <wx/intl.h>
@@ -132,10 +137,12 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
                         std::string text = GetTextRaw().data();
                         if (text == line_text) return;
                         line_text = std::move(text);
-		}
+                        normalized_line_text = agi::NormalizeUnicode(line_text);
+                        UpdateBidirectionalFromText(normalized_line_text.empty() ? std::string_view(line_text) : std::string_view(normalized_line_text));
+                }
 
-		UpdateStyle();
-	});
+                UpdateStyle();
+        });
 
 	OPT_SUB("Subtitle/Edit Box/Font Face", &SubsTextEditCtrl::SetStyles, this);
 	OPT_SUB("Subtitle/Edit Box/Font Size", &SubsTextEditCtrl::SetStyles, this);
@@ -187,6 +194,8 @@ bool SubsTextEditCtrl::SupportsBidirectionalRendering() {
 }
 
 void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
+        default_rtl_layout = rtl_layout;
+
 #if defined(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN) || defined(wxSTC_TECHNOLOGY_DIRECTWRITE)
 #ifdef __WXMSW__
 #if defined(wxSTC_TECHNOLOGY_DIRECTWRITERETAIN)
@@ -208,22 +217,15 @@ void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
         const bool bidi_supported = false;
 #endif
 
+        bidi_path_available = bidi_supported;
+
 #ifdef wxSTC_BIDIRECTIONAL_R2L
-        if (rtl_layout) {
-                SetBidirectional(wxSTC_BIDIRECTIONAL_R2L);
-        }
-#ifdef wxSTC_BIDIRECTIONAL_L2R
-        else {
-                SetBidirectional(wxSTC_BIDIRECTIONAL_L2R);
-        }
-#endif
-        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+        ApplyBidirectionalDirection(rtl_layout);
 #elif defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L)
-        SendMsg(SCI_SETBIDIRECTIONAL, rtl_layout ? SC_BIDIRECTIONAL_R2L : SC_BIDIRECTIONAL_L2R);
-        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+        ApplyBidirectionalDirection(rtl_layout);
 #else
         // No Scintilla bidi support; fall back to native layout so caret and selections stay aligned
-        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+        ApplyBidirectionalDirection(rtl_layout);
 #endif
 
         if (rtl_layout && !bidi_supported) {
@@ -241,6 +243,62 @@ void SubsTextEditCtrl::ConfigureBidirectionalSupport(bool rtl_layout) {
                         wxLogWarning("%s", warning);
                 }
         }
+}
+
+void SubsTextEditCtrl::ApplyBidirectionalDirection(bool rtl_layout) {
+        last_applied_rtl = rtl_layout;
+
+#ifdef wxSTC_BIDIRECTIONAL_R2L
+        if (rtl_layout) {
+                SetBidirectional(wxSTC_BIDIRECTIONAL_R2L);
+        }
+#ifdef wxSTC_BIDIRECTIONAL_L2R
+        else {
+                SetBidirectional(wxSTC_BIDIRECTIONAL_L2R);
+        }
+#endif
+        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+#elif defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L)
+        SendMsg(SCI_SETBIDIRECTIONAL, rtl_layout ? SC_BIDIRECTIONAL_R2L : SC_BIDIRECTIONAL_L2R);
+        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+#else
+        SetLayoutDirection(rtl_layout ? wxLayout_RightToLeft : wxLayout_LeftToRight);
+#endif
+}
+
+void SubsTextEditCtrl::UpdateBidirectionalFromText(std::string_view text) {
+#if defined(WX_STC_HAS_BIDI) || defined(wxSTC_BIDIRECTIONAL_R2L) || (defined(SCI_SETBIDIRECTIONAL) && defined(SC_BIDIRECTIONAL_R2L))
+        if (!bidi_path_available)
+                return;
+
+#ifdef WITH_FRIBIDI
+        auto codepoints = agi::Utf8ToCodepoints(text);
+        if (codepoints.empty()) {
+                ApplyBidirectionalDirection(default_rtl_layout);
+                return;
+        }
+
+        FriBidiParType base_dir = default_rtl_layout ? FRIBIDI_PAR_RTL : FRIBIDI_PAR_LTR;
+        std::vector<FriBidiLevel> embedding_levels(codepoints.size());
+        if (!fribidi_get_par_embedding_levels(reinterpret_cast<FriBidiChar*>(codepoints.data()), codepoints.size(), &base_dir, embedding_levels.data())) {
+                ApplyBidirectionalDirection(default_rtl_layout);
+                return;
+        }
+
+        bool rtl_line = base_dir == FRIBIDI_PAR_RTL || base_dir == FRIBIDI_PAR_WRTL;
+        if (base_dir == FRIBIDI_PAR_ON)
+                rtl_line = agi::ContainsArabicPunctuation(text) || default_rtl_layout;
+
+        fribidi_get_mirror_chars(reinterpret_cast<FriBidiChar*>(codepoints.data()), codepoints.size());
+
+        if (rtl_line != last_applied_rtl)
+                ApplyBidirectionalDirection(rtl_line);
+#else
+        ApplyBidirectionalDirection(default_rtl_layout);
+#endif
+#else
+        (void)text;
+#endif
 }
 
 void SubsTextEditCtrl::Subscribe(std::string const& name) {
@@ -353,30 +411,32 @@ void SubsTextEditCtrl::SetStyles() {
 }
 
 void SubsTextEditCtrl::UpdateStyle() {
-	AssDialogue *diag = context ? context->selectionController->GetActiveLine() : nullptr;
-	bool template_line = diag && diag->Comment && boost::istarts_with(diag->Effect.get(), "template");
+        AssDialogue *diag = context ? context->selectionController->GetActiveLine() : nullptr;
+        bool template_line = diag && diag->Comment && boost::istarts_with(diag->Effect.get(), "template");
 
-	tokenized_line = agi::ass::TokenizeDialogueBody(line_text, template_line);
-	agi::ass::SplitWords(line_text, tokenized_line);
+        auto const& styling_text = normalized_line_text.size() == line_text.size() ? normalized_line_text : line_text;
+
+        tokenized_line = agi::ass::TokenizeDialogueBody(styling_text, template_line);
+        agi::ass::SplitWords(styling_text, tokenized_line);
 
 	cursor_pos = -1;
 	UpdateCallTip();
 
 	StartStyling(0);
 
-	if (!OPT_GET("Subtitle/Highlight/Syntax")->GetBool()) {
-		SetStyling(line_text.size(), 0);
-		return;
-	}
+        if (!OPT_GET("Subtitle/Highlight/Syntax")->GetBool()) {
+                SetStyling(styling_text.size(), 0);
+                return;
+        }
 
-	if (line_text.empty()) return;
+        if (styling_text.empty()) return;
 
 	SetIndicatorCurrent(0);
 	size_t pos = 0;
-	for (auto const& style_range : agi::ass::SyntaxHighlight(line_text, tokenized_line, spellchecker.get())) {
-		if (style_range.type == agi::ass::SyntaxStyle::SPELLING) {
-			SetStyling(style_range.length, agi::ass::SyntaxStyle::NORMAL);
-			IndicatorFillRange(pos, style_range.length);
+        for (auto const& style_range : agi::ass::SyntaxHighlight(styling_text, tokenized_line, spellchecker.get())) {
+                if (style_range.type == agi::ass::SyntaxStyle::SPELLING) {
+                        SetStyling(style_range.length, agi::ass::SyntaxStyle::NORMAL);
+                        IndicatorFillRange(pos, style_range.length);
 		}
 		else {
 			SetStyling(style_range.length, style_range.type);
@@ -414,13 +474,14 @@ void SubsTextEditCtrl::SetTextTo(std::string const& text) {
 	Freeze();
 
 	auto insertion_point = GetInsertionPoint();
-	if (static_cast<size_t>(insertion_point) > line_text.size())
-		line_text = GetTextRaw().data();
-	auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
-	line_text.clear();
+        if (static_cast<size_t>(insertion_point) > line_text.size())
+                line_text = GetTextRaw().data();
+        auto old_pos = agi::CharacterCount(std::string_view(line_text).substr(0, insertion_point), 0);
+        line_text.clear();
+        normalized_line_text.clear();
 
-	if (context) {
-		context->textSelectionController->SetSelection(0, 0);
+        if (context) {
+                context->textSelectionController->SetSelection(0, 0);
                 SetTextRaw(text.c_str());
 		auto pos = agi::IndexOfCharacter(text, old_pos);
 		context->textSelectionController->SetSelection(pos, pos);

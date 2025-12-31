@@ -19,6 +19,8 @@
 #include <memory>
 #include <string_view>
 #include <unicode/brkiter.h>
+#include <unicode/umachine.h>
+#include <vector>
 
 namespace agi {
 
@@ -53,5 +55,17 @@ struct UTextDeleter {
 	void operator()(UText *ut) { if (ut) utext_close(ut); }
 };
 using UTextPtr = std::unique_ptr<UText, UTextDeleter>;
+
+/// Normalize a UTF-8 string to NFC
+std::string NormalizeUnicode(std::string_view text);
+
+/// Convert a UTF-8 string to a sequence of Unicode codepoints
+std::vector<UChar32> Utf8ToCodepoints(std::string_view text);
+
+/// Detect if a codepoint is an Arabic punctuation character
+bool IsArabicPunctuation(UChar32 codepoint) noexcept;
+
+/// Check whether a UTF-8 string contains Arabic punctuation
+bool ContainsArabicPunctuation(std::string_view text);
 
 } // namespace agi
