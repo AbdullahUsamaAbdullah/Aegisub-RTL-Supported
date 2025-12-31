@@ -10,6 +10,8 @@ Support is available on [Discord](https://discord.com/invite/AZaVyPr) or [IRC](i
 
 **RTL note:** For correct right-to-left editing, Aegisub expects ICU, HarfBuzz, and FriBidi to be available. Meson will use a system `libfribidi` when present or fall back to the bundled `subprojects/fribidi.wrap`; disable that only if you want configuration to fail when FriBidi is missing.
 
+Before configuring a build, run `./tools/prepare-build.sh` to download missing Meson subprojects up front and fail early if the build prerequisites (`meson`, `ninja`, and `pkg-config`) are not installed.
+
 ### Windows
 
 Prerequisites:
