@@ -8,6 +8,8 @@ Support is available on [Discord](https://discord.com/invite/AZaVyPr) or [IRC](i
 
 ## Building Aegisub
 
+**RTL note:** For correct right-to-left editing, Aegisub expects ICU, HarfBuzz, and FriBidi to be available. Meson will use a system `libfribidi` when present or fall back to the bundled `subprojects/fribidi.wrap`; disable that only if you want configuration to fail when FriBidi is missing.
+
 ### Windows
 
 Prerequisites:

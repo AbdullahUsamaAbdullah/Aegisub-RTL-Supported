@@ -217,14 +217,18 @@ void Interface(wxTreebook *book, Preferences *parent) {
         p->OptionAdd(edit_box, _("Overwrite in time boxes"), "Subtitle/Time Edit/Insert Mode");
         p->OptionAdd(edit_box, _("Shift+Enter adds \\n"), "Subtitle/Edit Box/Soft Line Break");
         p->OptionAdd(edit_box, _("Enable syntax highlighting"), "Subtitle/Highlight/Syntax");
-	auto rtl_layout = p->OptionAdd(edit_box, _("Use right-to-left interface layout (recommended for RTL languages)"), "Subtitle/Edit Box/RTL Layout");
-	wxString rtl_tooltip = _("Mirrors the subtitle editor and related panels when the interface language is right-to-left. This will be offered automatically after choosing an RTL UI language.");
-	rtl_tooltip << "\n\n" << _("Shortcut: Ctrl+Shift+Right (Cmd+Shift+Right on macOS) toggles right-to-left layout; Ctrl+Shift+Left (Cmd+Shift+Left) restores left-to-right.");
+        auto rtl_layout = p->OptionAdd(edit_box, _("Use right-to-left interface layout (recommended for RTL languages)"), "Subtitle/Edit Box/RTL Layout");
+        wxString rtl_tooltip = _("Mirrors the subtitle editor and related panels when the interface language is right-to-left. This will be offered automatically after choosing an RTL UI language.");
+        rtl_tooltip << "\n\n" << _("Shortcut: Ctrl+Shift+Right (Cmd+Shift+Right on macOS) toggles right-to-left layout; Ctrl+Shift+Left (Cmd+Shift+Left) restores left-to-right.");
         if (!SubsTextEditCtrl::SupportsBidirectionalRendering()) {
                 rtl_layout->Enable(false);
                 rtl_tooltip << "\n\n" << _(L"Full RTL rendering requires wxWidgets built with Scintilla bidirectional support "
                         L"(wxSTC_BIDIRECTIONAL_* or SCI_SETBIDIRECTIONAL), such as wxStyledTextCtrl using Windows DirectWrite "
-                        L"or a modern GTK/Harfbuzz build.");
+                        L"or a modern GTK/Harfbuzz build, plus the ICU/HarfBuzz/FriBidi shaping path used by the subtitle "
+                        L"editor.");
+                rtl_tooltip << "\n" << _(L"If the build was configured without FriBidi (e.g., Meson -Dfribidi=disabled or no "
+                        L"libfribidi present), the checkbox stays disabled. Reconfigure with FriBidi available or leave the "
+                        L"bundled wrap enabled to restore full rendering.");
         }
         rtl_layout->SetToolTip(rtl_tooltip);
         p->OptionBrowse(edit_box, _("Dictionaries path"), "Path/Dictionary");
